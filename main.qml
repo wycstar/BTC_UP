@@ -44,12 +44,21 @@ ApplicationWindow {
             color: "white"
         }
     }
+    Text{
+        id:runTip
+        objectName: "runTip"
+        x:(main.width - width) / 2
+        y:115
+        font.pixelSize: 15
+    }
     ProgressBar {
+        id:progressbar
+        objectName: "progressbar"
         x:50
         y:160
         width: main.width - 2 * x
         height: 20
-        value: 0.5
+        value: 0.0
         indeterminate: false
     }
     Button{
@@ -59,7 +68,7 @@ ApplicationWindow {
         width: 100
         height:50
         onClicked: {
-            httpLib.startCollect();
+            httpLib.auth();
         }
     }
 }
