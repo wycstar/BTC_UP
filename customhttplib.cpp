@@ -16,7 +16,6 @@ void CustomHttpLib::init(QQmlApplicationEngine *e)
     passwordEdit = rootObject->findChild<QObject*>("password");
     tip          = rootObject->findChild<QObject*>("runTip");
     progressbar  = rootObject->findChild<QObject*>("progressbar");
-
 }
 
 bool CustomHttpLib::handleRequest(QJsonObject &json)
@@ -36,7 +35,7 @@ void CustomHttpLib::auth()
     QJsonObject json;
     json.insert("username", usernameEdit->property("text").toString());
     json.insert("password", passwordEdit->property("text").toString());
-    json.insert("stage", 0);
+    json.insert("stage", "0");
     json.insert("start", true);
     handleRequest(json);
 }
@@ -44,7 +43,7 @@ void CustomHttpLib::auth()
 void CustomHttpLib::collect()
 {
     QJsonObject json;
-    json.insert("stage", 2);
+    json.insert("stage", "2");
     json.insert("start", true);
     handleRequest(json);
 }
@@ -52,7 +51,7 @@ void CustomHttpLib::collect()
 void CustomHttpLib::updateProgressBar()
 {
     QJsonObject json;
-    json.insert("stage", 1);
+    json.insert("stage", "1");
     json.insert("start", true);
     handleRequest(json);
 }
@@ -66,34 +65,36 @@ void CustomHttpLib::handleResponse(QNetworkReply* reply)
 {
     QByteArray response = reply->readAll();
     if(!isStreamStart){
-        QJsonObject json = QJsonDocument::fromJson(response).object();
-        switch(json.value("stage").toInt()){
-            case 0:{
-                if(json.value("result").toInt()){
-                    tip->setProperty("color", "#336633");
-                    tip->setProperty("text", "登录成功，已开始采集!");
-                    progressTimer.start(200);}
-                else{
-                    tip->setProperty("color", "#CC3333");
-                    tip->setProperty("text", "登录失败，账号或者密码错误!");}
-                break;}
+        QJsonParseError error;
+        QJsonObject json = QJsonDocument::fromJson(response, &error).object();
+        if(error.error == QJsonParseError::NoError){
+            switch(json.value("stage").toInt()){
+                case 0:{
+                    if(json.value("result").toInt()){
+                        tip->setProperty("color", "#336633");
+                        tip->setProperty("text", "登录成功，已开始采集!");
+                        progressTimer.start(2000);}
+                    else{
+                        tip->setProperty("color", "#CC3333");
+                        tip->setProperty("text", "登录失败，账号或者密码错误!");}
+                    break;}
 
-            case 1:{
-                if(!json.value("finish").toInt()){
-                    progressbar->setProperty("value", json.value("result"));}
-                else{
-                    progressbar->setProperty("value", 1.0);
-                    progressTimer.stop();
-                    isStreamStart = true;
-                    collect();}
-                break;}
-            default:
-                qDebug() << "Error!";}}
+                case 1:{
+                    if(!json.value("finish").toInt()){
+                        progressbar->setProperty("value", json.value("result"));}
+                    else{
+                        progressbar->setProperty("value", 1.0);
+                        progressTimer.stop();
+                        isStreamStart = true;
+                        collect();}
+                    break;}
+                default:
+                    qDebug() << "Error!";}}}
     else{
-        //qDebug() << response;
         file.write(response);
         file.close();
-        isStreamStart = false;}
+        isStreamStart = false;
+        tip->setProperty("text", "采集完毕，文件已保存到桌面!");}
     reply->deleteLater();
 }
 
